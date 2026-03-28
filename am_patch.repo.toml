@@ -4,7 +4,7 @@
 
 [git]
 allow_push_fail = true
-default_branch = "main"
+default_branch = "master"
 require_up_to_date = true
 enforce_main_branch = true
 ascii_only_patch = true
@@ -45,7 +45,7 @@ gates_skip_mypy = false
 gates_skip_js = false
 gate_js_extensions = [".js"]
 gate_js_command = ["node", "--check"]
-
+default_branch = "master"
 
 gates_skip_biome = false
 biome_format = true
