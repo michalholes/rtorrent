@@ -34,6 +34,7 @@
 #include "core/download.h"
 #include "core/download_factory.h"
 #include "core/http_queue.h"
+#include "core/port_check.h"
 #include "core/view.h"
 
 namespace core {
@@ -56,6 +57,7 @@ Manager::Manager()
   m_download_list     = std::make_unique<DownloadList>();
   m_file_status_cache = std::make_unique<FileStatusCache>();
   m_http_queue        = std::make_unique<HttpQueue>();
+  m_port_check        = std::make_unique<PortCheck>();
 
   torrent::Throttle* unthrottled = torrent::Throttle::create_throttle();
   unthrottled->set_max_rate(0);
@@ -148,6 +150,7 @@ Manager::cleanup() {
   // any more.
 
   m_download_list->clear();
+  m_port_check->stop();
 
   torrent::cleanup();
 }
@@ -185,12 +188,16 @@ Manager::listen_open() {
     int boundary = portFirst + random() % (portLast - portFirst + 1);
 
     if (torrent::runtime::network_manager()->listen_open(boundary, portLast) ||
-        torrent::runtime::network_manager()->listen_open(portFirst, boundary))
+        torrent::runtime::network_manager()->listen_open(portFirst, boundary)) {
+      m_port_check->start();
       return;
+    }
 
   } else {
-    if (torrent::runtime::network_manager()->listen_open(portFirst, portLast))
+    if (torrent::runtime::network_manager()->listen_open(portFirst, portLast)) {
+      m_port_check->start();
       return;
+    }
   }
 
   throw torrent::input_error("Could not open/bind port for listening: " + std::string(std::strerror(errno)));

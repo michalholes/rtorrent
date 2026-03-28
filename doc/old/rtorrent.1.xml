@@ -442,6 +442,40 @@ and including <emphasis>b</emphasis>.
 Open the listening port at a random position in the port range.
         </para></listitem>
       </varlistentry>
+      <varlistentry>
+        <term>network.port_check.provider = <replaceable>off | yougetsignal | portchecker</replaceable></term>
+        <term>network.port_check.provider.set = <replaceable>off | yougetsignal | portchecker</replaceable></term>
+        <listitem><para>
+Select the external web provider used for port reachability checks. The default
+provider is <emphasis>yougetsignal</emphasis>, matching the ruTorrent
+check_port plugin. Set to <emphasis>off</emphasis> to disable further checks.
+The resulting verdict is shown in the header as an external port-check status,
+separate from the DHT reachability status in the footer.
+        </para></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>network.port_check.interval = <replaceable>seconds</replaceable></term>
+        <term>network.port_check.interval.set = <replaceable>seconds</replaceable></term>
+        <listitem><para>
+Set the interval, in seconds, between repeated external port reachability
+checks. The default is 120 seconds.
+        </para></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>network.port_check.status</term>
+        <term>network.port_check.last_check</term>
+        <term>network.port_check.last_error</term>
+        <term>network.port_check.ip</term>
+        <term>network.port_check.port</term>
+        <listitem><para>
+Return the cached external port-check status, the Unix time of the last check,
+its latest error string and the IP:port used for the last completed request.
+The status values are <emphasis>unknown</emphasis>, <emphasis>open</emphasis>,
+<emphasis>closed</emphasis> or <emphasis>error</emphasis>.
+        </para></listitem>
+      </varlistentry>
 
       <varlistentry>
         <term>check_hash = <replaceable>yes | no</replaceable></term>

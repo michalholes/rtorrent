@@ -22,6 +22,7 @@ class FileStatusCache;
 namespace core {
 
 class HttpQueue;
+class PortCheck;
 
 typedef std::map<std::string, torrent::ThrottlePair> ThrottleMap;
 
@@ -39,6 +40,7 @@ public:
   FileStatusCache*    file_status_cache()                 { return m_file_status_cache.get(); }
 
   HttpQueue*          http_queue()                        { return m_http_queue.get(); }
+  PortCheck*          port_check()                        { return m_port_check.get(); }
 
   View*               hashing_view()                      { return m_hashingView; }
   void                set_hashing_view(View* v);
@@ -98,6 +100,7 @@ private:
   std::unique_ptr<DownloadList>    m_download_list;
   std::unique_ptr<FileStatusCache> m_file_status_cache;
   std::unique_ptr<HttpQueue>       m_http_queue;
+  std::unique_ptr<PortCheck>       m_port_check;
 
   View*               m_hashingView{};
 

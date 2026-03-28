@@ -24,6 +24,7 @@
 #include "command_helpers.h"
 #include "core/download.h"
 #include "core/manager.h"
+#include "core/port_check.h"
 #include "rpc/scgi.h"
 #include "ui/root.h"
 #include "rpc/parse.h"
@@ -233,6 +234,15 @@ initialize_command_network() {
   CMD2_VAR_STRING  ("network.port_range",  "6881-6999");
 
   CMD2_ANY         ("network.listen.port",        [](auto, auto)                 { return torrent::runtime::listen_port(); });
+  CMD2_ANY         ("network.port_check.provider", [](auto, auto)           { return control->core()->port_check()->provider_name(); });
+  CMD2_ANY_STRING_V("network.port_check.provider.set", [](auto, auto& str)   { return control->core()->port_check()->set_provider(str); });
+  CMD2_ANY         ("network.port_check.interval", [](auto, auto)           { return control->core()->port_check()->interval_seconds(); });
+  CMD2_ANY_VALUE_V ("network.port_check.interval.set", [](auto, auto& value) { return control->core()->port_check()->set_interval_seconds(value); });
+  CMD2_ANY         ("network.port_check.status",   [](auto, auto)           { return control->core()->port_check()->status_name(); });
+  CMD2_ANY         ("network.port_check.last_check", [](auto, auto)         { return control->core()->port_check()->last_check_at(); });
+  CMD2_ANY         ("network.port_check.last_error", [](auto, auto)         { return control->core()->port_check()->last_error(); });
+  CMD2_ANY         ("network.port_check.ip",       [](auto, auto)           { return control->core()->port_check()->last_ip(); });
+  CMD2_ANY         ("network.port_check.port",     [](auto, auto)           { return control->core()->port_check()->last_port(); });
   CMD2_ANY         ("network.listen.backlog",     [nw_config](auto, auto)        { return nw_config->listen_backlog(); });
   CMD2_ANY_VALUE_V ("network.listen.backlog.set", [nw_config](auto, auto& value) { return nw_config->set_listen_backlog(value); });
 
@@ -325,6 +335,15 @@ initialize_command_network() {
   rpc::rpc.mark_safe("network.port_random");
   rpc::rpc.mark_safe("network.port_range");
   rpc::rpc.mark_safe("network.listen.port");
+  rpc::rpc.mark_safe("network.port_check.provider");
+  rpc::rpc.mark_safe("network.port_check.provider.set");
+  rpc::rpc.mark_safe("network.port_check.interval");
+  rpc::rpc.mark_safe("network.port_check.interval.set");
+  rpc::rpc.mark_safe("network.port_check.status");
+  rpc::rpc.mark_safe("network.port_check.last_check");
+  rpc::rpc.mark_safe("network.port_check.last_error");
+  rpc::rpc.mark_safe("network.port_check.ip");
+  rpc::rpc.mark_safe("network.port_check.port");
   rpc::rpc.mark_safe("network.listen.backlog");
 
   rpc::rpc.mark_safe("network.http.current_open");

@@ -17,6 +17,8 @@ libsub_root_a_SOURCES = \
 	core/http_queue.h \
 	core/manager.cc \
 	core/manager.h \
+	core/port_check.cc \
+	core/port_check.h \
 	core/range_map.h \
 	core/view.cc \
 	core/view.h \
