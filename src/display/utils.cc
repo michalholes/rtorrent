@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iomanip>
 #include <torrent/exceptions.h>
+#include <torrent/runtime/network_manager.h>
 #include <torrent/connection_manager.h>
 #include <torrent/rate.h>
 #include <torrent/throttle.h>

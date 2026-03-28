@@ -46,6 +46,7 @@ gates_skip_js = false
 gate_js_extensions = [".js"]
 gate_js_command = ["node", "--check"]
 
+
 gates_skip_biome = false
 biome_format = true
 biome_autofix = true
