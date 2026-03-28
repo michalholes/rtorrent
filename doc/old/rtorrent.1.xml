@@ -759,9 +759,26 @@ The port is optional, with port 6881 being used by default.
       </varlistentry>
 
       <varlistentry>
-        <term>dht_statistics = <replaceable>TODO</replaceable></term>
+        <term>dht.statistics</term>
         <listitem><para>
-TODO
+Returns a map with the current DHT runtime status. In addition to the existing
+DHT counters, the map includes
+<emphasis>reachability_checked</emphasis>,
+<emphasis>reachability_active</emphasis>,
+<emphasis>reachability_last_check</emphasis> (Unix time) and
+<emphasis>reachability_recheck_interval</emphasis> (seconds).
+The reachability fields describe the latest DHT reachability verdict, not a
+general socket-level connectivity guarantee.
+        </para></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>dht.reachability.recheck.set = <replaceable>seconds</replaceable></term>
+        <listitem><para>
+Set the steady-state interval, in seconds, used for repeated DHT reachability
+checks after bootstrap completes. The default is 900 seconds. This setting does
+not change the initial 60 second post-start check, the 1 minute bootstrap
+recheck cadence or the automatic DHT stop timer.
         </para></listitem>
       </varlistentry>
 

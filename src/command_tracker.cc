@@ -150,6 +150,12 @@ initialize_command_tracker() {
   CMD2_ANY_VALUE_V    ("dht.override_port.set", std::bind(&torrent::net::NetworkConfig::set_override_dht_port, torrent::config::network_config(), std::placeholders::_2));
 
   CMD2_ANY_STRING     ("dht.add_node",          std::bind(&apply_dht_add_node, std::placeholders::_2));
+  CMD2_ANY            ("dht.reachability.recheck",
+                       std::bind(&core::DhtManager::reachability_recheck_interval, dht_manager));
+  CMD2_ANY_VALUE_V    ("dht.reachability.recheck.set",
+                       std::bind(&core::DhtManager::set_reachability_recheck_interval,
+                                 dht_manager,
+                                 std::placeholders::_2));
   CMD2_ANY            ("dht.statistics",        std::bind(&core::DhtManager::dht_statistics, dht_manager));
 
   rpc::rpc.mark_safe("t.url");
@@ -179,5 +185,7 @@ initialize_command_tracker() {
   rpc::rpc.mark_safe("dht.port");
   rpc::rpc.mark_safe("dht.override_port");
   rpc::rpc.mark_safe("dht.add_node");
+  rpc::rpc.mark_safe("dht.reachability.recheck");
+  rpc::rpc.mark_safe("dht.reachability.recheck.set");
   rpc::rpc.mark_safe("dht.statistics");
 }

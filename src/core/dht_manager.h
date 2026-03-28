@@ -1,6 +1,8 @@
 #ifndef RTORRENT_CORE_DHT_MANAGER_H
 #define RTORRENT_CORE_DHT_MANAGER_H
 
+#include <chrono>
+
 #include <torrent/object.h>
 #include <torrent/utils/scheduler.h>
 
@@ -13,6 +15,11 @@ public:
   void                load_dht_cache();
   void                save_dht_cache();
   torrent::Object     dht_statistics();
+
+  int64_t             reachability_recheck_interval() const { return m_reachabilityRecheckInterval.count(); }
+  void                set_reachability_recheck_interval(int64_t value);
+  bool                has_reachability_verdict() const { return m_hasReachabilityVerdict; }
+  int64_t             last_reachability_check_at() const { return m_lastReachabilityCheckAt; }
 
   void                start_dht();
   void                stop_dht();
@@ -42,6 +49,9 @@ private:
   torrent::utils::SchedulerEntry m_update_timeout;
   torrent::utils::SchedulerEntry m_stop_timeout;
 
+  std::chrono::seconds m_reachabilityRecheckInterval{std::chrono::minutes(15)};
+  int64_t             m_lastReachabilityCheckAt{};
+  bool                m_hasReachabilityVerdict{};
   bool                m_warned{};
   int                 m_start{dht_off};
 };

@@ -2,6 +2,7 @@
 
 #include "dht_manager.h"
 
+#include <ctime>
 #include <fstream>
 #include <sstream>
 #include <torrent/object.h>
@@ -92,6 +93,9 @@ DhtManager::start_dht() {
 
   torrent::this_thread::scheduler()->wait_for_ceil_seconds(&m_update_timeout, 60s);
 
+  m_lastReachabilityCheckAt = 0;
+  m_hasReachabilityVerdict = false;
+  m_warned = false;
   m_dhtPrevCycle = 0;
   m_dhtPrevQueriesSent = 0;
   m_dhtPrevRepliesReceived = 0;
@@ -140,6 +144,14 @@ DhtManager::save_dht_cache() {
 }
 
 void
+DhtManager::set_reachability_recheck_interval(int64_t value) {
+  if (value <= 0)
+    throw torrent::input_error("DHT reachability recheck interval must be greater than zero.");
+
+  m_reachabilityRecheckInterval = std::chrono::seconds(value);
+}
+
+void
 DhtManager::set_mode(const std::string& arg) {
   int i;
   for (i = 0; i < dht_settings_num; i++) {
@@ -176,20 +188,32 @@ DhtManager::update() {
     }
   }
 
-  // While bootstrapping (log_statistics returns true), check every minute if it completed, otherwise update every 15 minutes.
+  // While bootstrapping (log_statistics returns true), check every minute if it completed.
+  // Afterwards, use the configured steady-state reachability recheck interval.
   if (log_statistics(false))
     torrent::this_thread::scheduler()->wait_for_ceil_seconds(&m_update_timeout, 1min);
   else
-    torrent::this_thread::scheduler()->wait_for_ceil_seconds(&m_update_timeout, 15min);
+    torrent::this_thread::scheduler()->wait_for_ceil_seconds(
+        &m_update_timeout,
+        m_reachabilityRecheckInterval);
 }
 
 bool
 DhtManager::log_statistics(bool force) {
   auto stats = torrent::runtime::network_manager()->dht_controller()->get_statistics();
 
+  const bool has_reachability_check = stats.cycle > 2;
+
+  if (has_reachability_check) {
+    m_lastReachabilityCheckAt = std::time(nullptr);
+    m_hasReachabilityVerdict = true;
+  }
+
   // Check for firewall problems.
 
-  if (stats.cycle > 2 && stats.queries_sent - m_dhtPrevQueriesSent > 100 && stats.queries_received == m_dhtPrevQueriesReceived) {
+  if (has_reachability_check &&
+      stats.queries_sent - m_dhtPrevQueriesSent > 100 &&
+      stats.queries_received == m_dhtPrevQueriesReceived) {
     // We should have had clients ping us at least but have received
     // nothing, that means the UDP port is probably unreachable.
     if (torrent::runtime::network_manager()->is_dht_active_and_receiving_requests())
@@ -198,7 +222,9 @@ DhtManager::log_statistics(bool force) {
     torrent::runtime::network_manager()->dht_controller()->set_receive_requests(false);
   }
 
-  if (stats.queries_sent - m_dhtPrevQueriesSent > stats.num_nodes * 2 + 20 && stats.replies_received == m_dhtPrevRepliesReceived) {
+  if (has_reachability_check &&
+      stats.queries_sent - m_dhtPrevQueriesSent > stats.num_nodes * 2 + 20 &&
+      stats.replies_received == m_dhtPrevRepliesReceived) {
     // No replies to over 20 queries plus two per node we have. Probably firewalled.
     if (!m_warned)
       LT_LOG("listening port appears to be firewalled, no replies received", 0);
@@ -209,7 +235,8 @@ DhtManager::log_statistics(bool force) {
 
   m_warned = false;
 
-  if (stats.queries_received > m_dhtPrevQueriesReceived)
+  if (has_reachability_check &&
+      stats.queries_received > m_dhtPrevQueriesReceived)
     torrent::runtime::network_manager()->dht_controller()->set_receive_requests(true);
 
   // Nothing to log while bootstrapping, but check again every minute.
@@ -258,11 +285,20 @@ torrent::Object
 DhtManager::dht_statistics() {
   torrent::Object dhtStats = torrent::Object::create_map();
 
-  dhtStats.insert_key("dht",              dht_settings[m_start]);
-  dhtStats.insert_key("active",           torrent::runtime::network_manager()->is_dht_active());
-  dhtStats.insert_key("throttle",         "");
+  const bool is_dht_active = torrent::runtime::network_manager()->is_dht_active();
 
-  if (torrent::runtime::network_manager()->is_dht_active()) {
+  dhtStats.insert_key("dht",                           dht_settings[m_start]);
+  dhtStats.insert_key("active",                        is_dht_active);
+  dhtStats.insert_key("throttle",                      "");
+  dhtStats.insert_key("reachability_checked",          m_hasReachabilityVerdict);
+  dhtStats.insert_key("reachability_active",
+                      torrent::runtime::network_manager()->
+                          is_dht_active_and_receiving_requests());
+  dhtStats.insert_key("reachability_last_check",       m_lastReachabilityCheckAt);
+  dhtStats.insert_key("reachability_recheck_interval",
+                      reachability_recheck_interval());
+
+  if (is_dht_active) {
     auto stats = torrent::runtime::network_manager()->dht_controller()->get_statistics();
 
     dhtStats.insert_key("cycle",            stats.cycle);

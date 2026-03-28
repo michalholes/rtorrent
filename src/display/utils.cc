@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <cstdio>
+#include <ctime>
 #include <sstream>
 #include <iomanip>
 #include <torrent/exceptions.h>
@@ -22,6 +23,7 @@
 
 #include "control.h"
 #include "globals.h"
+#include "core/dht_manager.h"
 #include "core/download.h"
 #include "core/manager.h"
 #include "rpc/parse_commands.h"
@@ -337,6 +339,23 @@ print_status_throttle_rate(char* first, char* last, bool up, const ui::ThrottleN
 }
 
 char*
+print_status_elapsed(char* first, char* last, time_t age) {
+  if (age < 0)
+    age = 0;
+
+  if (age < 60)
+    return print_buffer(first, last, "%lds", (long)age);
+
+  if (age < 60 * 60)
+    return print_buffer(first, last, "%ldm", (long)(age / 60));
+
+  if (age < 24 * 60 * 60)
+    return print_buffer(first, last, "%ldh", (long)(age / (60 * 60)));
+
+  return print_buffer(first, last, "%ldd", (long)(age / (24 * 60 * 60)));
+}
+
+char*
 print_status_info(char* first, char* last) {
   ui::ThrottleNameList& throttle_up_names = control->ui()->get_status_throttle_up_names();
   ui::ThrottleNameList& throttle_down_names = control->ui()->get_status_throttle_down_names();
@@ -375,6 +394,40 @@ print_status_info(char* first, char* last) {
 
   first = print_buffer(first, last, " KB]");
   first = print_buffer(first, last, " [Port: %i]", (unsigned int)torrent::runtime::listen_port());
+
+  auto dht_manager = control->dht_manager();
+  const bool dht_active = torrent::runtime::network_manager()->is_dht_active();
+  const bool reachability_checked = dht_manager->has_reachability_verdict();
+  const bool reachability_active =
+      torrent::runtime::network_manager()->is_dht_active_and_receiving_requests();
+
+  first = print_buffer(first, last, " [DHT ");
+
+  if (!dht_active) {
+    if (!reachability_checked) {
+      first = print_buffer(first, last, "off, unchecked");
+    } else {
+      first = print_buffer(first, last, "off, last %s ",
+                           reachability_active ? "active" : "passive");
+      first = print_status_elapsed(
+          first,
+          last,
+          std::time(nullptr) - dht_manager->last_reachability_check_at());
+      first = print_buffer(first, last, " ago");
+    }
+  } else if (!reachability_checked) {
+    first = print_buffer(first, last, "unchecked");
+  } else {
+    first = print_buffer(first, last, "%s ",
+                         reachability_active ? "active" : "passive");
+    first = print_status_elapsed(
+        first,
+        last,
+        std::time(nullptr) - dht_manager->last_reachability_check_at());
+    first = print_buffer(first, last, " ago");
+  }
+
+  first = print_buffer(first, last, "]");
 
   auto local_address = torrent::config::network_config()->local_address_best_match();
 

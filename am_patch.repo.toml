@@ -1,0 +1,180 @@
+# Repo-local AMP policy for the patchhub repo.
+# Intended destination: .am_patch/am_patch.repo.toml
+# This file contains only repo-owned policy. Bootstrap/layout/IPC keys stay in the bootstrap config.
+
+[git]
+allow_push_fail = true
+default_branch = "main"
+require_up_to_date = true
+enforce_main_branch = true
+ascii_only_patch = true
+
+[gates]
+compile_check = true
+compile_targets = ["."]
+compile_exclude = ["patches"]
+
+ruff_autofix = true
+ruff_autofix_legalize_outside = false
+ruff_format = true
+
+# Repo-local Python gate interpreter policy.
+python_gate_mode = "runner"
+python_gate_python = ".venv/bin/python"
+
+# Gate ordering stays bootstrap-owned. Only repo-local gate policy lives here.
+gates_allow_fail = true
+gates_skip_dont_touch = false
+dont_touch_paths = [
+  "am_patch.repo.toml",
+  "scripts/am_patch/am_patch.toml",
+  "scripts/patchhub/static/patchhub_bootstrap.js",
+  "tsconfig.json",
+  "biome.json",
+  "pytest.ini",
+  "pyproject.toml",
+  ".github/workflows/ci.yml",
+]
+apply_failure_partial_gates_policy = "repair_only"
+apply_failure_zero_gates_policy = "repair_only"
+
+gates_skip_ruff = false
+gates_skip_pytest = false
+gates_skip_mypy = false
+
+gates_skip_js = false
+gate_js_extensions = [".js"]
+gate_js_command = ["node", "--check"]
+
+gates_skip_biome = false
+biome_format = true
+biome_autofix = true
+biome_autofix_legalize_outside = true
+gate_biome_fix_command = ["npm", "run", "lint:files:fix", "--"]
+gate_biome_format_command = ["npx", "biome", "format", "--write", "."]
+gate_biome_extensions = [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx"]
+gate_biome_command = ["npm", "run", "lint:files", "--"]
+
+gates_skip_typescript = false
+gate_typescript_extensions = [".js", ".ts", ".tsx", ".mts", ".cts", ".d.ts"]
+gate_typescript_command = ["tsc", "--noEmit", "--pretty", "false", "--allowJs", "--checkJs", "--target", "ES2022", "--lib", "ES2022,DOM"]
+gate_typescript_mode = "auto"
+gate_typescript_base_tsconfig = "tsconfig.json"
+typescript_targets = ["scripts/patchhub/static/", "types/"]
+
+gates_skip_docs = false
+gate_docs_include = [""]
+gate_docs_exclude = ["patches", "quarantine"]
+gate_docs_required_files = [""]
+
+
+gates_skip_badguys = false
+gate_badguys_mode = "auto"
+gate_badguys_trigger_prefixes = ["scripts/am_patch"]
+gate_badguys_trigger_files = [
+  "scripts/am_patch.py",
+  "scripts/am_patch_instructions.md",
+]
+gate_badguys_command = ["badguys/badguys.py", "--no-suite-jail"]
+
+gates_skip_monolith = false
+gate_monolith_enabled = true
+gate_monolith_mode = "strict"
+gate_monolith_scan_scope = "patch"
+gate_monolith_extensions = [".py", ".js"]
+gate_monolith_compute_fanin = true
+gate_monolith_on_parse_error = "fail"
+
+gate_monolith_large_loc = 900
+gate_monolith_huge_loc = 1300
+
+gate_monolith_large_allow_loc_increase = 20
+gate_monolith_huge_allow_loc_increase = 0
+gate_monolith_large_allow_exports_delta = 2
+gate_monolith_huge_allow_exports_delta = 0
+gate_monolith_large_allow_imports_delta = 1
+gate_monolith_huge_allow_imports_delta = 0
+
+gate_monolith_new_file_max_loc = 400
+gate_monolith_new_file_max_exports = 25
+gate_monolith_new_file_max_imports = 15
+
+gate_monolith_hub_fanin_delta = 5
+gate_monolith_hub_fanout_delta = 5
+gate_monolith_hub_exports_delta_min = 3
+gate_monolith_hub_loc_delta_min = 100
+
+gate_monolith_crossarea_min_distinct_areas = 3
+
+gate_monolith_catchall_basenames = ["utils.py", "common.py", "helpers.py", "misc.py"]
+gate_monolith_catchall_dirs = ["utils", "common", "helpers", "misc"]
+gate_monolith_catchall_allowlist = []
+
+gate_monolith_areas_prefixes = [
+  "badguys/",
+  "scripts/am_patch/",
+  "scripts/patchhub/",
+  "tests/",
+  "types/",
+]
+
+gate_monolith_areas_names = [
+  "badguys",
+  "runner",
+  "patchhub",
+  "tests",
+  "types",
+]
+
+gate_monolith_areas_dynamic = [
+  "",
+  "",
+  "",
+  "",
+  "",
+]
+
+[promotion]
+fail_if_live_files_changed = true
+live_changed_resolution = "fail"
+commit_and_push = true
+no_rollback = false
+
+[audit]
+post_success_audit = false
+audit_rubric_guard = false
+
+gate_ruff_mode = "auto"
+gate_mypy_mode = "auto"
+gate_pytest_mode = "auto"
+gate_pytest_py_prefixes = ["governance", "badguys", "scripts", "tests"]
+gate_pytest_js_prefixes = ["scripts/patchhub/static"]
+pytest_routing_mode = "bucketed"
+pytest_full_suite_prefixes = [
+  "pyproject.toml",
+  "pytest.ini",
+  "tests/conftest.py",
+  "tests/e2e/conftest.py",
+  "tests/e2e/_server_patchhub.py",
+  "tests/e2e/_asset_inventory.py",
+]
+ruff_targets = ["badguys", "scripts", "governance", "tests"]
+pytest_targets = ["tests"]
+mypy_targets = ["scripts", "badguys", "governance"]
+
+[pytest_roots]
+"amp.*" = "scripts/am_patch/"
+"*" = "*"
+
+[pytest_tree]
+"amp.phb" = "scripts/patchhub/"
+"amp.badguys" = "badguys/"
+
+[pytest_namespace_modules]
+"amp" = ["am_patch", "scripts.am_patch"]
+"amp.phb" = ["patchhub", "scripts.patchhub"]
+"amp.badguys" = ["badguys"]
+
+[pytest_dependencies]
+"amp.phb" = ["amp"]
+"amp.badguys" = ["amp"]
